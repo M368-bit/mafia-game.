@@ -13,11 +13,9 @@ import PartyModal from './components/PartyModal';
 import PlayWithAI from './components/PlayWithAI';
 
 const SERVER_URL =
-  typeof window !== 'undefined' && window.location.port === '3000'
+  typeof window !== 'undefined' && window.location.hostname === 'localhost'
     ? 'http://localhost:4000'
-    : typeof window !== 'undefined'
-    ? window.location.origin
-    : 'http://localhost:4000';
+    : 'https://mafia-game-ippk.onrender.com';
 
 export const socket: Socket = io(SERVER_URL, {
   transports: ['websocket', 'polling'],
@@ -170,6 +168,7 @@ export default function App() {
       socket.off('room_updated');
       socket.off('game_started');
       socket.off('phase_changed');
+      socket.off('role_assigned');
       socket.off('game_over');
       socket.off('error_message');
     };
