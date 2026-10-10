@@ -20,14 +20,24 @@ export default function VoiceChat({ socket, roomData }: VoiceChatProps) {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:openrelay.metered.ca:80' },
+      {
+        urls: 'turn:openrelay.metered.ca:80',
+        username: 'openrelayproject',
+        credential: 'openrelayproject',
+      },
+      {
+        urls: 'turn:openrelay.metered.ca:443',
+        username: 'openrelayproject',
+        credential: 'openrelayproject',
+      },
     ],
   };
 
   useEffect(() => {
     socket.on('webrtc_offer', async ({ senderId, offer }) => {
       try {
-        if (!isAlive) return; // Dead players do not process audio streams!
+        if (!isAlive) return;
         const pc = createPeerConnection(senderId);
         await pc.setRemoteDescription(new RTCSessionDescription(offer));
         const answer = await pc.createAnswer();
@@ -64,7 +74,6 @@ export default function VoiceChat({ socket, roomData }: VoiceChatProps) {
     };
   }, [socket, isAlive]);
 
-  // Turn off mic immediately if player dies mid-game
   useEffect(() => {
     if (!isAlive && !isMuted) {
       stopAudio();
@@ -101,7 +110,7 @@ export default function VoiceChat({ socket, roomData }: VoiceChatProps) {
       }
       audioEl.srcObject = event.streams[0];
       audioEl.play().catch((e) => {
-        console.log('Mobile/Laptop audio play blocked by browser policy:', e);
+        console.log('Audio play blocked:', e);
       });
     };
 
