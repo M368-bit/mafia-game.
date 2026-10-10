@@ -17,7 +17,11 @@ export default function VoiceChat({ socket, roomData }: VoiceChatProps) {
   const isAlive = me?.isAlive;
 
   const ICE_SERVERS = {
-    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }],
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+    ],
   };
 
   useEffect(() => {
@@ -90,9 +94,15 @@ export default function VoiceChat({ socket, roomData }: VoiceChatProps) {
       if (!audioEl) {
         audioEl = document.createElement('audio');
         audioEl.autoplay = true;
+        audioEl.setAttribute('playsinline', 'true');
+        audioEl.controls = false;
+        document.body.appendChild(audioEl);
         audioElementsRef.current[targetId] = audioEl;
       }
       audioEl.srcObject = event.streams[0];
+      audioEl.play().catch((e) => {
+        console.log('Mobile/Laptop audio play blocked by browser policy:', e);
+      });
     };
 
     return pc;
@@ -106,7 +116,14 @@ export default function VoiceChat({ socket, roomData }: VoiceChatProps) {
 
     if (isMuted) {
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          },
+          video: false,
+        });
         localStreamRef.current = stream;
         setIsMuted(false);
 
@@ -133,6 +150,10 @@ export default function VoiceChat({ socket, roomData }: VoiceChatProps) {
     }
     Object.values(peersRef.current).forEach((pc) => pc.close());
     peersRef.current = {};
+    Object.values(audioElementsRef.current).forEach((el) => {
+      try { el.remove(); } catch (e) {}
+    });
+    audioElementsRef.current = {};
     setIsMuted(true);
   };
 
