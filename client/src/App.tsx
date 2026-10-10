@@ -168,7 +168,6 @@ export default function App() {
       socket.off('room_updated');
       socket.off('game_started');
       socket.off('phase_changed');
-      socket.off('role_assigned');
       socket.off('game_over');
       socket.off('error_message');
     };
