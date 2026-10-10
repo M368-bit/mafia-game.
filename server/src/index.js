@@ -201,6 +201,19 @@ function broadcastPhaseChanged(room) {
   }
 }
 
+function getRoomForSocket(socket) {
+  if (socket.roomId && rooms.has(socket.roomId)) {
+    return rooms.get(socket.roomId);
+  }
+  for (const r of rooms.values()) {
+    if (r.players.has(socket.id)) {
+      socket.roomId = r.id;
+      return r;
+    }
+  }
+  return null;
+}
+
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
 
@@ -663,7 +676,7 @@ io.on('connection', (socket) => {
 
   // Audio Meme
   socket.on('play_audio_meme', ({ type }) => {
-    const room = rooms.get(socket.roomId);
+    const room = getRoomForSocket(socket);
     if (room) {
       socket.to(room.id).emit('play_audio_meme', { type, senderName: room.players.get(socket.id)?.name });
     }
@@ -671,7 +684,7 @@ io.on('connection', (socket) => {
 
   // WebRTC Signaling
   socket.on('webrtc_offer', ({ targetId, offer }) => {
-    const room = rooms.get(socket.roomId);
+    const room = getRoomForSocket(socket);
     const player = room?.players.get(socket.id);
     if (!player || !player.isAlive) return; // Dead players cannot voice stream!
     io.to(targetId).emit('webrtc_offer', { senderId: socket.id, offer });
@@ -739,10 +752,12 @@ function assignRoles(room) {
 
   const roles = [];
   for (let i = 0; i < mafiaCount; i++) roles.push('mafia');
-  if (room.settings.enableSpecialRoles && count >= 4) {
-    roles.push('detective');
-    if (count >= 5) roles.push('doctor');
+
+  if (room.settings.enableSpecialRoles) {
+    if (!roles.includes('detective')) roles.push('detective');
+    if (!roles.includes('doctor')) roles.push('doctor');
   }
+
   while (roles.length < count) {
     roles.push('citizen');
   }
